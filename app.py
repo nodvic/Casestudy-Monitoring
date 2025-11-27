@@ -25,3 +25,4 @@ def ontvang_metingen():
 if __name__ == '__main__':
     print("[SERVER] API start op poort 5000...")
     app.run(debug=True, port=5000)
+    #test
