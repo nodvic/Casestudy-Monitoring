@@ -11,6 +11,12 @@ services:
     restart: unless-stopped
     networks:
       - monitoring_network
+    environment:
+      - AZURE_CLIENT_ID=39fd58d5-d751-4c93-abc6-da122e830834
+      - AZURE_CLIENT_SECRET=jU58Q~jWbVvDBQeo3D_kHN1fpK~CL19KsybITclB
+      - AZURE_TENANT_ID=038b550a-e089-4080-8e45-140a87157602
+      - FLASK_SECRET_KEY=f47a61d85b1c0e3a9f0e1d8c7a6e4d2a1f8c7e6d4a9f0e1d
+      - AZURE_REDIRECT_URI=http://localhost:5000/auth/callback
 
   monitoring-client:
     build:
@@ -25,6 +31,7 @@ services:
       - monitoring_network
     volumes:
       - client_data:/app
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   client_data:
