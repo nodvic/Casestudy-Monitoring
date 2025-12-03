@@ -56,7 +56,7 @@ def verstuur_naar_cloud(payload):
         print(f"[FOUT] Er is een fout opgetreden bij de API-verbinding: {e}")
 
 def doe_automatische_meting():
-    print("\nAutomatische Meting Registreren")
+    print("\n--- Automatische Meting Registreren ---")
     
     hostname = os.uname().nodename 
     print(f"[INFO] Hostname voor meting: {hostname}")
@@ -86,7 +86,7 @@ def doe_automatische_meting():
         print("[INFO] Data klaarmaken voor verzending naar Cloud...")
         verstuur_naar_cloud(cloud_payload)
         
-        print("Metingen Succesvol Verwerkt")
+        print("--- Metingen Succesvol Verwerkt ---")
         
     except Exception as e:
         print(f"[FOUT] Er is een fout opgetreden: {e}")
