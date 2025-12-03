@@ -3,9 +3,10 @@ import datetime
 import json
 import psutil
 import requests
+import os
 
 DATABASE_NAAM = 'monitoring_data.db'
-API_URL = 'http://127.0.0.1:5000/api/ingest'
+API_URL = os.getenv('API_ENDPOINT', 'http://monitoring-api:5000/api/ingest')
 
 def database_klaarmaken():
     conn = sqlite3.connect(DATABASE_NAAM)
@@ -41,19 +42,24 @@ def meting_opslaan(hostname, metric_naam, waarde):
     print(f"[INFO] Meting lokaal opgeslagen: {hostname} | {metric_naam}: {waarde}")
 
 def verstuur_naar_cloud(payload):
+    print(f"[INFO] Verbindingsdoel: {API_URL}")
     try:
         response = requests.post(API_URL, json=payload, timeout=5)
         if response.status_code == 200 or response.status_code == 201:
-            print("[INFO] Data succesvol verstuurd naar Azure API.")
+            print("[INFO] Data succesvol verstuurd naar API.")
         else:
             print(f"[FOUT] API retourneerde statuscode: {response.status_code}")
+            print(f"[FOUT] API Response: {response.text}")
+    except requests.exceptions.ConnectionError:
+        print("[FATALE FOUT] Kon GEEN verbinding maken met de API-container. Zorg dat de API-service draait en bereikbaar is via de netwerknaam.")
     except Exception as e:
-        print(f"[FOUT] Kon geen verbinding maken met de API: {e}")
+        print(f"[FOUT] Er is een fout opgetreden bij de API-verbinding: {e}")
 
 def doe_automatische_meting():
-    print("\n--- Automatische Meting Registreren ---")
+    print("\nAutomatische Meting Registreren")
     
-    hostname = input("Voer een naam in voor deze meting: ")
+    hostname = os.uname().nodename 
+    print(f"[INFO] Hostname voor meting: {hostname}")
     
     print("[INFO] Bezig met het verzamelen van lokale systeemdata...")
     try:
@@ -80,80 +86,11 @@ def doe_automatische_meting():
         print("[INFO] Data klaarmaken voor verzending naar Cloud...")
         verstuur_naar_cloud(cloud_payload)
         
-        print("--- Metingen Succesvol Verwerkt ---")
+        print("Metingen Succesvol Verwerkt")
         
     except Exception as e:
         print(f"[FOUT] Er is een fout opgetreden: {e}")
 
-def toon_rapport():
-    print("\n--- Volledig Rapport (Lokale Database) ---")
-    
-    conn = sqlite3.connect(DATABASE_NAAM)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT timestamp, hostname, metric_naam, waarde FROM metingen ORDER BY timestamp DESC")
-    
-    resultaten = cursor.fetchall()
-    
-    if not resultaten:
-        print("[INFO] De database is nog leeg. Voer eerst een meting uit.")
-    else:
-        print(f"{'TIJDSTIP':<20} {'HOSTNAME':<15} {'METRIEK':<15} {'WAARDE'}")
-        print("-" * 60)
-        for rij in resultaten:
-            print(f"{rij[0]:<20} {rij[1]:<15} {rij[2]:<15} {rij[3]}")
-            
-    conn.close()
-
-def exporteer_naar_json():
-    print("\n--- Data Exporteren naar JSON ---")
-    
-    conn = sqlite3.connect(DATABASE_NAAM)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT timestamp, hostname, metric_naam, waarde FROM metingen ORDER BY timestamp")
-    resultaten = cursor.fetchall()
-    
-    if not resultaten:
-        print("[INFO] De database is nog leeg. Er is niets om te exporteren.")
-        conn.close()
-        return
-
-    export_data = []
-    for timestamp, hostname, metric_naam, waarde in resultaten:
-        export_data.append({
-            "tijd": timestamp,
-            "host": hostname,
-            "metriek": metric_naam,
-            "waarde": waarde
-        })
-
-    with open('export.json', 'w') as f:
-        json.dump(export_data, f, indent=4)
-    
-    print("[SUCCES] Data geëxporteerd naar 'export.json'.")
-    conn.close()
-
-database_klaarmaken()
-
-while True:
-    print("\n-- Hoofdmenu --")
-    print("Kies een optie:")
-    print("1. Meting uitvoeren (en naar Azure sturen)")
-    print("2. Toon lokaal rapport")
-    print("3. Lokaal exporteren naar JSON")
-    print("4. Stoppen")
-    
-    keuze = input("Keuze: ")
-    
-    if keuze == '1':
-        doe_automatische_meting()
-    elif keuze == '2':
-        toon_rapport()
-    elif keuze == '3':
-        exporteer_naar_json()
-    elif keuze == '4':
-        print("Applicatie wordt gestopt.")
-        break
-    else:
-        print("[FOUT] Ongeldige keuze, probeer opnieuw.")
+if __name__ == '__main__':
+    database_klaarmaken()
+    doe_automatische_meting()

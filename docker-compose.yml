@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  monitoring-api:
+    build:
+      context: .
+      dockerfile: dockerfile.api
+    container_name: monitoring-api
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    networks:
+      - monitoring_network
+
+  monitoring-client:
+    build:
+      context: .
+      dockerfile: dockerfile.client
+    container_name: monitoring-client
+    depends_on:
+      - monitoring-api
+    environment:
+      - API_ENDPOINT=http://monitoring-api:5000/api/ingest
+    networks:
+      - monitoring_network
+    volumes:
+      - client_data:/app
+
+volumes:
+  client_data:
+
+networks:
+  monitoring_network:
+    driver: bridge
