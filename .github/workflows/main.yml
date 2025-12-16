@@ -20,7 +20,13 @@ jobs:
       uses: docker/setup-buildx-action@v2
 
     - name: Build API Container
-      run: docker build -f dockerfile.api -t monitoring-api .
+      run: |
+        docker build -f dockerfile.api \
+        --build-arg AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }} \
+        --build-arg AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }} \
+        --build-arg AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }} \
+        --build-arg FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }} \
+        -t monitoring-api .
 
     - name: Build Client Container
       run: docker build -f dockerfile.client -t monitoring-client .
