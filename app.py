@@ -2,6 +2,8 @@ from flask import Flask, request, redirect, url_for, session, jsonify, render_te
 import datetime
 import pyodbc 
 import os
+if not os.path.exists('data'):
+    os.makedirs('data')
 import sqlite3
 from requests_oauthlib import OAuth2Session
 
@@ -17,7 +19,7 @@ SCOPE = ["User.Read", "openid", "profile"]
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'uw_zeer_veilige_geheime_sleutel') 
-DATABASE_NAAM = 'monitoring_api.db'
+DATABASE_NAAM = os.path.join('data', 'monitoring_api.db')
 
 def database_klaarmaken():
     conn = sqlite3.connect(DATABASE_NAAM)
