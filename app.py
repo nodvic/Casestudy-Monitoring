@@ -15,7 +15,7 @@ REDIRECT_URI = os.environ.get('AZURE_REDIRECT_URI', 'http://localhost:5000/auth/
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 AUTHORIZE_URL = f"{AUTHORITY}/oauth2/v2.0/authorize"
 TOKEN_URL = f"{AUTHORITY}/oauth2/v2.0/token"
-SCOPE = ["User.Read", "openid", "profile"]
+SCOPE = ["User.Read", "email", "profile",  "openid"]
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'uw_zeer_veilige_geheime_sleutel') 
@@ -70,24 +70,22 @@ def login():
 
 @app.route('/auth/callback')
 def callback():
-    try:
-        azure = get_azure_auth_session()
-        token = azure.fetch_token(
-            TOKEN_URL,
-            client_secret=CLIENT_SECRET,
-            authorization_response=request.url
-        )
+    azure = get_azure_auth_session()
+    token = azure.fetch_token(
+        TOKEN_URL,
+        client_secret=CLIENT_SECRET,
+        authorization_response=request.url
+    )
+    
+    #ophalen van user info in graph API
+    #user_info_url = "https://graph.microsoft.com/v1.0/me"
+    #user_response = azure.get(user_info_url, token=token)
+    #user_info = user_response.json()
+
+    session['user_info'] = {}
+    return redirect(url_for('dashboard'))
+
         
-        user_info_url = "https://graph.microsoft.com/v1.0/me"
-        user_response = azure.get(user_info_url, token=token)
-        user_info = user_response.json()
-
-        session['user_info'] = user_info
-        return redirect(url_for('dashboard'))
-    except Exception as e:
-        print(f"[AUTH FOUT] Kan niet inloggen: {e}")
-        return render_template('dashboard.html', metingen=[], auth_error="Inloggen mislukt. Controleer Client IDs en Secrets."), 401
-
 @app.route('/logout')
 def logout():
     session.pop('user_info', None)
@@ -141,7 +139,7 @@ def dashboard():
         hosts_count=hosts_count,
         laatste_cpu=laatste_cpu,
         container_totaal=container_totaal,
-        user_email=session['user_info'].get('mail', 'Gast')
+        #user_email=session['user_info'].get('mail', 'Gast')
     )
 
 if __name__ == '__main__':
@@ -149,5 +147,6 @@ if __name__ == '__main__':
         print("[FATALE FOUT] Entra ID Omgevingsvariabelen zijn niet geconfigureerd. Kan niet starten zonder deze.")
     else:
         database_klaarmaken()
-        print("[SERVER] API en WEB Frontend starten op poort 5000 (Beveiligd)...")
-        app.run(host='0.0.0.0', port=5000)
+        port = 5000
+        print("[SERVER] API en WEB Frontend starten op poort {port}} (Beveiligd)...")
+        app.run(host='0.0.0.0', port=port)
